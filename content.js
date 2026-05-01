@@ -420,6 +420,18 @@
 
   let debounceTimer = null;
 
+  // Minimum gap between Vision AI calls regardless of DOM mutations.
+  // At ~840 tokens/call and a 30k TPM limit, staying well under 35 calls/min
+  // means we should call no more than once per minute.
+  const VISION_MIN_INTERVAL_MS = 60_000;
+  // Extra buffer added on top of the API-reported retry-after to avoid
+  // re-hitting the rate limit immediately after the window resets.
+  const RETRY_BUFFER_MS = 2_000;
+
+  // Tracks when Vision AI may be called again.
+  let lastVisionCallTime = 0;
+  let visionCooldownUntil = 0;
+
   async function update() {
     try {
       const settings = await loadSettings();
@@ -427,14 +439,39 @@
       let sourceLabel = null;
 
       if (settings.visionEnabled && settings.visionApiKey) {
-        try {
-          const visionData = await runVisionAnalysis(settings);
-          events = buildEventsFromVisionData(visionData);
-          sourceLabel = '🤖 Vision AI';
-        } catch (err) {
-          console.warn('[Spext] Vision AI failed, falling back to DOM:', err.message);
+        const now = Date.now();
+        const inCooldown = now < visionCooldownUntil;
+        const tooSoon = now - lastVisionCallTime < VISION_MIN_INTERVAL_MS;
+
+        if (inCooldown || tooSoon) {
+          // Skip Vision AI this cycle – use DOM silently
           events = extractEventsFromDOM();
-          sourceLabel = '⚠ Vision AI failed';
+          if (inCooldown) {
+            const secsLeft = Math.max(1, Math.ceil((visionCooldownUntil - now) / 1000));
+            sourceLabel = `⏳ Vision AI rate limited (retry in ${secsLeft}s)`;
+          }
+        } else {
+          try {
+            lastVisionCallTime = now;
+            const visionData = await runVisionAnalysis(settings);
+            events = buildEventsFromVisionData(visionData);
+            sourceLabel = '🤖 Vision AI';
+          } catch (err) {
+            // Parse the retry-after duration from OpenAI's 429 error body.
+            // Expected format: "Please try again in X.Xs." where X.X is seconds.
+            // If the value is unreasonable (e.g. > 5 min) we cap it at VISION_MIN_INTERVAL_MS.
+            const retryMatch = err.message.match(/try again in ([\d.]+)s/i);
+            if (retryMatch) {
+              const parsedSecs = parseFloat(retryMatch[1]);
+              const clampedMs = Math.min(parsedSecs * 1000, 5 * 60_000);
+              visionCooldownUntil = Date.now() + Math.ceil(clampedMs) + RETRY_BUFFER_MS;
+            } else if (err.message.includes('429')) {
+              visionCooldownUntil = Date.now() + VISION_MIN_INTERVAL_MS;
+            }
+            console.warn('[Spext] Vision AI failed, falling back to DOM:', err.message);
+            events = extractEventsFromDOM();
+            sourceLabel = '⚠ Vision AI failed';
+          }
         }
       } else {
         events = extractEventsFromDOM();
