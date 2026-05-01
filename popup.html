@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spext – Settings</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="sp-header">
+    <img src="icons/icon32.png" alt="" class="sp-logo" />
+    <div>
+      <h1 class="sp-title">Spext</h1>
+      <p class="sp-subtitle">Session Income Tracker</p>
+    </div>
+  </div>
+
+  <div class="sp-section">
+    <h2 class="sp-section-title">Client Types &amp; Rates</h2>
+    <p class="sp-hint">
+      Each type has a rate per session. Keywords (comma-separated) in an event
+      title will match that type. Leave keywords blank on one type to use it as
+      the default catch-all.
+    </p>
+
+    <div id="client-types-list"></div>
+
+    <button id="add-client-type" class="sp-btn sp-btn-secondary">
+      + Add client type
+    </button>
+  </div>
+
+  <div class="sp-section">
+    <h2 class="sp-section-title">No-Show / Cancel Keywords</h2>
+    <p class="sp-hint">
+      Events whose titles contain any of these words will be counted as
+      lost income instead of paid sessions.
+    </p>
+    <input
+      type="text"
+      id="noshow-keywords"
+      class="sp-input"
+      placeholder="e.g. cancelled, no show, no-show, ns"
+    />
+  </div>
+
+  <div class="sp-section">
+    <h2 class="sp-section-title">Session Duration (fallback)</h2>
+    <p class="sp-hint">
+      Used to calculate hours when an event has no end time.
+    </p>
+    <div class="sp-inline">
+      <input
+        type="number"
+        id="session-duration"
+        class="sp-input sp-input-sm"
+        min="1"
+        max="480"
+        placeholder="50"
+      />
+      <span class="sp-unit">minutes</span>
+    </div>
+  </div>
+
+  <div class="sp-section">
+    <h2 class="sp-section-title">Rate Type</h2>
+    <div class="sp-radio-group">
+      <label>
+        <input type="radio" name="rate-type" value="per_session" /> Per session
+      </label>
+      <label>
+        <input type="radio" name="rate-type" value="per_hour" /> Per hour
+      </label>
+    </div>
+  </div>
+
+  <div class="sp-section sp-section-ai">
+    <h2 class="sp-section-title">
+      Vision AI
+      <span class="sp-badge">Optional</span>
+    </h2>
+    <p class="sp-hint">
+      When enabled, Spext takes a screenshot of your calendar and uses
+      OpenAI's GPT-4o Vision to detect events — useful when the calendar
+      doesn't expose readable DOM text. Requires your own OpenAI API key.
+    </p>
+    <label class="sp-toggle-row">
+      <input type="checkbox" id="vision-enabled" />
+      <span>Enable Vision AI analysis</span>
+    </label>
+    <div id="vision-key-row" class="sp-vision-key hidden">
+      <input
+        type="password"
+        id="vision-api-key"
+        class="sp-input"
+        placeholder="sk-..."
+        autocomplete="off"
+      />
+      <p class="sp-hint sp-hint-warn">
+        Your key is stored locally in Chrome's sync storage and is never sent
+        anywhere except OpenAI's API.
+      </p>
+    </div>
+  </div>
+
+  <div class="sp-footer">
+    <button id="save-btn" class="sp-btn sp-btn-primary">Save settings</button>
+    <span id="save-status" class="sp-save-status"></span>
+  </div>
+
+  <!-- Client-type row template (cloned by popup.js) -->
+  <template id="client-type-tpl">
+    <div class="sp-ct-row">
+      <div class="sp-ct-fields">
+        <input
+          type="text"
+          class="sp-input sp-ct-name"
+          placeholder="Type name (e.g. individuals)"
+        />
+        <div class="sp-inline">
+          <span class="sp-unit sp-unit-prefix">$</span>
+          <input
+            type="number"
+            class="sp-input sp-input-sm sp-ct-rate"
+            min="0"
+            step="0.01"
+            placeholder="0.00"
+          />
+        </div>
+        <input
+          type="text"
+          class="sp-input sp-ct-keywords"
+          placeholder="Match keywords (comma-separated, optional)"
+        />
+        <label class="sp-default-label">
+          <input type="checkbox" class="sp-ct-default" />
+          Default
+        </label>
+      </div>
+      <button class="sp-ct-remove sp-btn-icon" title="Remove">✕</button>
+    </div>
+  </template>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+/* ─── Spext Popup Styles ───────────────────────────────────────────────────── */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 420px;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 13px;
+  color: #3c4043;
+  background: #ffffff;
+  padding-bottom: 8px;
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+
+.sp-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid #e8eaed;
+  background: #f8f9fa;
+}
+
+.sp-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.sp-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #202124;
+  line-height: 1.2;
+}
+
+.sp-subtitle {
+  font-size: 11px;
+  color: #80868b;
+  margin-top: 1px;
+}
+
+/* ─── Sections ───────────────────────────────────────────────────────────── */
+
+.sp-section {
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid #e8eaed;
+}
+
+.sp-section:last-of-type {
+  border-bottom: none;
+}
+
+.sp-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #202124;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sp-hint {
+  font-size: 11px;
+  color: #80868b;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.sp-hint-warn {
+  color: #f29900;
+  margin-top: 4px;
+}
+
+/* ─── Inputs ─────────────────────────────────────────────────────────────── */
+
+.sp-input {
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid #dadce0;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #3c4043;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.sp-input:focus {
+  border-color: #1a73e8;
+}
+
+.sp-input-sm {
+  width: 80px;
+}
+
+.sp-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sp-unit {
+  font-size: 12px;
+  color: #5f6368;
+  white-space: nowrap;
+}
+
+.sp-unit-prefix {
+  margin-right: -2px;
+}
+
+/* ─── Client-type rows ───────────────────────────────────────────────────── */
+
+#client-types-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.sp-ct-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: #f8f9fa;
+  border: 1px solid #e8eaed;
+  border-radius: 6px;
+  padding: 8px 8px 8px 10px;
+}
+
+.sp-ct-fields {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-rows: auto auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.sp-ct-name {
+  grid-column: 1 / 2;
+  grid-row: 1;
+}
+
+.sp-ct-fields .sp-inline {
+  grid-column: 2 / 3;
+  grid-row: 1;
+}
+
+.sp-default-label {
+  grid-column: 3 / 4;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #5f6368;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.sp-ct-keywords {
+  grid-column: 1 / 4;
+  grid-row: 2;
+}
+
+.sp-ct-remove {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: #80868b;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 3px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+  margin-top: 4px;
+}
+
+.sp-ct-remove:hover {
+  color: #d93025;
+  background: #fce8e6;
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+
+.sp-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.sp-btn-primary {
+  background: #1a73e8;
+  color: #fff;
+}
+
+.sp-btn-primary:hover {
+  background: #1765cc;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.sp-btn-secondary {
+  background: #fff;
+  color: #1a73e8;
+  border: 1px solid #dadce0;
+  font-size: 12px;
+}
+
+.sp-btn-secondary:hover {
+  background: #e8f0fe;
+}
+
+/* ─── Radio group ────────────────────────────────────────────────────────── */
+
+.sp-radio-group {
+  display: flex;
+  gap: 16px;
+}
+
+.sp-radio-group label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* ─── Vision AI section ──────────────────────────────────────────────────── */
+
+.sp-section-ai {
+  background: #fafbff;
+}
+
+.sp-badge {
+  background: #e8f0fe;
+  color: #1a73e8;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 10px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.sp-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.sp-vision-key {
+  margin-top: 6px;
+}
+
+.sp-vision-key.hidden {
+  display: none;
+}
+
+/* ─── Footer ─────────────────────────────────────────────────────────────── */
+
+.sp-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px 6px;
+}
+
+.sp-save-status {
+  font-size: 12px;
+  color: #34a853;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.sp-save-status.visible {
+  opacity: 1;
+}
