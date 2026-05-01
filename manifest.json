@@ -2,14 +2,14 @@
   "manifest_version": 3,
   "name": "Spext – Session Income Tracker",
   "version": "1.0.0",
-  "description": "Counts calendar sessions and projects clinician income. Shows client appointments, paid sessions, scheduled hours, and forecast income directly on Google Calendar.",
+  "description": "Counts calendar sessions and projects clinician income. Shows client appointments, paid sessions, scheduled hours, and forecast income directly on SimplePractice.",
   "permissions": [
     "storage",
     "activeTab",
     "scripting"
   ],
   "host_permissions": [
-    "https://calendar.google.com/*"
+    "https://secure.simplepractice.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -26,7 +26,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://calendar.google.com/*"],
+      "matches": ["https://secure.simplepractice.com/*"],
       "js": ["content.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
