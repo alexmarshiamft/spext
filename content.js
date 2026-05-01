@@ -276,12 +276,17 @@
     const stats = {
       totalAppointments: 0,
       paidAppointments: 0,
+      noshowCount: 0,
       scheduledMinutes: 0,
       scheduledIncome: 0,
       lostIncome: 0,
       forecastIncome: 0,
       scheduledHours: 0,
+      // Ordered array of { id, name, count, income } for paid sessions per type
+      byClientType: [],
     };
+
+    const byTypeMap = {};
 
     events.forEach((event) => {
       const { status, clientType: ct } = classifyEvent(event, settings);
@@ -300,13 +305,24 @@
           : ct.rate;
 
       if (status === 'noshow') {
+        stats.noshowCount++;
         stats.lostIncome += income;
       } else {
         stats.paidAppointments++;
         stats.scheduledMinutes += durationMins;
         stats.scheduledIncome += income;
+        if (!byTypeMap[ct.id]) {
+          byTypeMap[ct.id] = { id: ct.id, name: ct.name, count: 0, income: 0 };
+        }
+        byTypeMap[ct.id].count++;
+        byTypeMap[ct.id].income += income;
       }
     });
+
+    // Preserve the order defined in settings
+    stats.byClientType = settings.clientTypes
+      .filter((ct) => byTypeMap[ct.id])
+      .map((ct) => byTypeMap[ct.id]);
 
     stats.scheduledHours = stats.scheduledMinutes / 60;
     stats.forecastIncome = stats.scheduledIncome - stats.lostIncome;
@@ -359,14 +375,25 @@
       .map((ct) => `${ct.name} ${formatCurrency(ct.rate)}`)
       .join(', ');
 
+    // Show count alongside the dollar amount so therapists can audit quickly.
+    const noshowLabel = stats.noshowCount === 1 ? 'no-show/cancel' : 'no-shows/cancels';
     const lostHtml =
       stats.lostIncome > 0
-        ? `<span class="spext-stat spext-loss">Lost to no-show/cancel: <b>-${formatCurrency(stats.lostIncome)}</b></span><span class="spext-sep">·</span>`
+        ? `<span class="spext-stat spext-loss">${stats.noshowCount} ${noshowLabel}: <b>-${formatCurrency(stats.lostIncome)}</b></span><span class="spext-sep">·</span>`
         : '';
 
     const sourceHtml = sourceLabel
       ? `<span class="spext-source">${sourceLabel}</span>`
       : '';
+
+    // Per-client-type session breakdown (only shown when 2+ types are present)
+    const breakdownHtml =
+      stats.byClientType.length >= 2
+        ? stats.byClientType
+            .map((t) => `<span class="spext-stat"><b>${t.count}</b> ${t.name}</span>`)
+            .join('<span class="spext-sep">·</span>') +
+          '<span class="spext-sep">·</span>'
+        : '';
 
     banner.innerHTML = `
       <div class="spext-row">
@@ -381,14 +408,75 @@
         <span class="spext-sep">·</span>
         ${lostHtml}
         ${sourceHtml}
+        <button class="spext-copy" title="Copy stats to clipboard">📋</button>
       </div>
       <div class="spext-row">
         <span class="spext-stat">Forecast income: <b>${formatCurrency(stats.forecastIncome)}</b></span>
         <span class="spext-sep">·</span>
+        ${breakdownHtml}
         <span class="spext-stat">Rates: ${ratesText}</span>
-        <span class="spext-sep">·</span>
       </div>
     `;
+
+    // Attach copy handler after innerHTML update (event listeners are wiped by innerHTML)
+    banner.querySelector('.spext-copy').addEventListener('click', () => {
+      copyStats(stats, settings);
+    });
+  }
+
+  // ─── Copy Stats ───────────────────────────────────────────────────────────────
+
+  /**
+   * Copy a plain-text summary of the current stats to the clipboard.
+   * Useful for pasting into billing notes, session logs, etc.
+   */
+  function copyStats(stats, settings) {
+    const hr = '─'.repeat(40);
+    const lines = ['Spext – Session Income Tracker', hr];
+
+    let paidLine = `Paid appointments:    ${stats.paidAppointments}`;
+    if (stats.byClientType.length >= 2) {
+      const breakdown = stats.byClientType.map((t) => `${t.count} ${t.name}`).join(', ');
+      paidLine += ` (${breakdown})`;
+    }
+
+    lines.push(
+      `Client appointments:  ${stats.totalAppointments}`,
+      paidLine,
+    );
+
+    if (stats.noshowCount > 0) {
+      const noshowLabel = stats.noshowCount === 1 ? 'No-show/cancel' : 'No-shows/cancels';
+      lines.push(`${noshowLabel}: ${stats.noshowCount} (-${formatCurrency(stats.lostIncome)})`);
+    }
+
+    lines.push(
+      `Scheduled hours:      ${formatHours(stats.scheduledHours)}`,
+      hr,
+      `Scheduled income:     ${formatCurrency(stats.scheduledIncome)}`,
+    );
+
+    if (stats.lostIncome > 0) {
+      lines.push(`Lost to no-shows:    -${formatCurrency(stats.lostIncome)}`);
+    }
+
+    lines.push(`Forecast income:      ${formatCurrency(stats.forecastIncome)}`);
+
+    const ratesText = settings.clientTypes
+      .map((ct) => `${ct.name} ${formatCurrency(ct.rate)}`)
+      .join(', ');
+    lines.push(`Rates:                ${ratesText}`);
+
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      const btn = document.querySelector(`#${BANNER_ID} .spext-copy`);
+      if (btn) {
+        const original = btn.textContent;
+        btn.textContent = '✓';
+        setTimeout(() => { btn.textContent = original; }, COPY_SUCCESS_DISPLAY_MS);
+      }
+    }).catch(() => {
+      // Clipboard write unavailable – fail silently
+    });
   }
 
   // ─── Vision AI ────────────────────────────────────────────────────────────────
@@ -420,6 +508,22 @@
 
   let debounceTimer = null;
 
+  // Minimum gap between Vision AI calls regardless of DOM mutations.
+  // At ~840 tokens/call and a 30k TPM limit, staying well under 35 calls/min
+  // means we should call no more than once per minute.
+  const VISION_MIN_INTERVAL_MS = 60_000;
+  // Extra buffer added on top of the API-reported retry-after to avoid
+  // re-hitting the rate limit immediately after the window resets.
+  const RETRY_BUFFER_MS = 2_000;
+  // Upper bound for the API-reported retry-after duration (5 minutes).
+  const MAX_RETRY_INTERVAL_MS = 5 * 60_000;
+  // How long to show the ✓ confirmation on the copy button (ms).
+  const COPY_SUCCESS_DISPLAY_MS = 1_500;
+
+  // Tracks when Vision AI may be called again.
+  let lastVisionCallTime = 0;
+  let visionCooldownUntil = 0;
+
   async function update() {
     try {
       const settings = await loadSettings();
@@ -427,14 +531,39 @@
       let sourceLabel = null;
 
       if (settings.visionEnabled && settings.visionApiKey) {
-        try {
-          const visionData = await runVisionAnalysis(settings);
-          events = buildEventsFromVisionData(visionData);
-          sourceLabel = '🤖 Vision AI';
-        } catch (err) {
-          console.warn('[Spext] Vision AI failed, falling back to DOM:', err.message);
+        const now = Date.now();
+        const inCooldown = now < visionCooldownUntil;
+        const tooSoon = now - lastVisionCallTime < VISION_MIN_INTERVAL_MS;
+
+        if (inCooldown || tooSoon) {
+          // Skip Vision AI this cycle – use DOM silently
           events = extractEventsFromDOM();
-          sourceLabel = '⚠ Vision AI failed';
+          if (inCooldown) {
+            const secsLeft = Math.max(1, Math.ceil((visionCooldownUntil - now) / 1000));
+            sourceLabel = `⏳ Vision AI rate limited (retry in ${secsLeft}s)`;
+          }
+        } else {
+          try {
+            lastVisionCallTime = now;
+            const visionData = await runVisionAnalysis(settings);
+            events = buildEventsFromVisionData(visionData);
+            sourceLabel = '🤖 Vision AI';
+          } catch (err) {
+            // Parse the retry-after duration from OpenAI's 429 error body.
+            // Expected format: "Please try again in X.Xs." where X.X is seconds.
+            // If the value is unreasonable (e.g. > 5 min) we cap it at VISION_MIN_INTERVAL_MS.
+            const retryMatch = err.message.match(/try again in ([\d.]+)s/i);
+            if (retryMatch) {
+              const parsedSecs = parseFloat(retryMatch[1]);
+              const clampedMs = Math.min(parsedSecs * 1000, MAX_RETRY_INTERVAL_MS);
+              visionCooldownUntil = Date.now() + Math.ceil(clampedMs) + RETRY_BUFFER_MS;
+            } else if (err.message.includes('429')) {
+              visionCooldownUntil = Date.now() + VISION_MIN_INTERVAL_MS;
+            }
+            console.warn('[Spext] Vision AI failed, falling back to DOM:', err.message);
+            events = extractEventsFromDOM();
+            sourceLabel = '⚠ Vision AI failed';
+          }
         }
       } else {
         events = extractEventsFromDOM();

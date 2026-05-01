@@ -77,3 +77,21 @@
     padding: 4px 10px;
   }
 }
+
+/* Copy-stats button */
+#spext-stats-banner .spext-copy {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 4px;
+  margin-left: auto;
+  opacity: 0.45;
+  line-height: 1;
+  transition: opacity 0.15s;
+  user-select: none;
+}
+
+#spext-stats-banner .spext-copy:hover {
+  opacity: 1;
+}

@@ -48,6 +48,7 @@
   const visionKeyRow = document.getElementById('vision-key-row');
   const visionApiKeyInput = document.getElementById('vision-api-key');
   const saveBtn = document.getElementById('save-btn');
+  const resetBtn = document.getElementById('reset-btn');
   const saveStatus = document.getElementById('save-status');
   const tpl = document.getElementById('client-type-tpl');
 
@@ -176,6 +177,16 @@
   });
 
   saveBtn.addEventListener('click', saveSettings);
+
+  resetBtn.addEventListener('click', () => {
+    if (!window.confirm('Reset all settings to defaults? This cannot be undone.')) return;
+    chrome.storage.sync.set(DEFAULT_SETTINGS, () => {
+      loadSettings();
+      saveStatus.textContent = '✓ Reset to defaults';
+      saveStatus.classList.add('visible');
+      setTimeout(() => saveStatus.classList.remove('visible'), 2000);
+    });
+  });
 
   // ─── Boot ───────────────────────────────────────────────────────────────────
   loadSettings();
