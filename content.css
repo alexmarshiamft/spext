@@ -1,0 +1,79 @@
+/* ─── Spext Stats Banner ───────────────────────────────────────────────────── */
+
+#spext-stats-banner {
+  position: sticky;
+  top: 0;
+  z-index: 9999;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  padding: 6px 16px;
+  font-family: 'Google Sans', Roboto, Arial, sans-serif;
+  font-size: 13px;
+  color: #3c4043;
+  line-height: 1.6;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Each row is a horizontal flex strip */
+#spext-stats-banner .spext-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 22px;
+}
+
+/* Clock icon – slightly larger */
+#spext-stats-banner .spext-clock {
+  font-size: 15px;
+  margin-right: 2px;
+  user-select: none;
+}
+
+/* Individual stat segments */
+#spext-stats-banner .spext-stat {
+  white-space: nowrap;
+  color: #3c4043;
+}
+
+/* Bold numbers & key values */
+#spext-stats-banner .spext-stat b {
+  font-weight: 600;
+  color: #202124;
+}
+
+/* Dot separator */
+#spext-stats-banner .spext-sep {
+  color: #bdbdbd;
+  margin: 0 2px;
+  user-select: none;
+}
+
+/* Lost income is shown in red */
+#spext-stats-banner .spext-loss {
+  color: #d93025;
+}
+
+#spext-stats-banner .spext-loss b {
+  color: #d93025;
+}
+
+/* Source label (DOM / Vision AI) */
+#spext-stats-banner .spext-source {
+  font-size: 11px;
+  color: #80868b;
+  margin-left: 4px;
+}
+
+/* Responsive: stack rows on very narrow viewports */
+@media (max-width: 700px) {
+  #spext-stats-banner {
+    font-size: 11px;
+    padding: 4px 10px;
+  }
+}
