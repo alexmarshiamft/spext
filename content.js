@@ -119,43 +119,66 @@
   // ─── DOM Event Extraction ─────────────────────────────────────────────────────
 
   /**
-   * Extract all visible calendar events from the Google Calendar DOM.
+   * Extract all visible calendar events from the SimplePractice DOM.
    * Returns an array of { id, title, durationMins, isAllDay } objects.
    *
-   * Google Calendar renders events as interactive elements with:
-   *   - data-eventid attribute on the event container
-   *   - aria-label like "Title, Day Month Date, StartTime – EndTime"
+   * SimplePractice renders appointments with:
+   *   - data-appointment-id attribute on the event container
+   *   - aria-label on the clickable wrapper, e.g. "Client Name, Appointment, Mon Apr 27, 9:00 AM – 9:50 AM"
+   *   - visible text showing start time and client info in separate lines
    *
-   * We use aria-label as the primary source because it is stable across
-   * view changes and Google's frequent class-name obfuscation updates.
+   * We use aria-label as the primary source for both the title and time range
+   * because it reliably contains the full appointment details. When aria-label
+   * is absent we fall back to the element's visible text content.
+   *
+   * A Google Calendar fallback (data-eventid) is retained for compatibility.
    */
   function extractEventsFromDOM() {
     const events = [];
     const seenIds = new Set();
 
-    // Find event chip containers
-    const eventEls = document.querySelectorAll('[data-eventid]');
+    // Prefer SimplePractice's data-appointment-id; fall back to Google Calendar's data-eventid.
+    let eventEls = Array.from(document.querySelectorAll('[data-appointment-id]'));
+    let idAttr = 'data-appointment-id';
+    if (eventEls.length === 0) {
+      eventEls = Array.from(document.querySelectorAll('[data-eventid]'));
+      idAttr = 'data-eventid';
+    }
 
     eventEls.forEach((el) => {
-      const eventId = el.getAttribute('data-eventid');
+      const eventId = el.getAttribute(idAttr);
       if (!eventId || seenIds.has(eventId)) return;
       seenIds.add(eventId);
 
-      // Walk up to find the nearest aria-label (the clickable button wrapper)
+      // Walk up to find the nearest aria-label (the clickable wrapper).
       let labelEl = el;
       while (labelEl && !labelEl.getAttribute('aria-label')) {
         labelEl = labelEl.parentElement;
       }
       const ariaLabel = labelEl ? labelEl.getAttribute('aria-label') || '' : '';
 
-      // Extract the event title (everything before the first comma)
-      const title = ariaLabel.split(',')[0].trim();
+      // Extract title: first comma-segment of aria-label is most reliable.
+      // Fall back to visible text, skipping any line that is purely a time string
+      // (e.g. "9:00 AM") so we keep the client/appointment description.
+      let title = ariaLabel ? ariaLabel.split(',')[0].trim() : '';
+      if (!title) {
+        const lines = (el.textContent || '')
+          .split(/[\n\r]+/)
+          .map((s) => s.trim())
+          .filter(Boolean);
+        const nonTimeLines = lines.filter(
+          (line) => !/^\d{1,2}(?::\d{2})?\s*(?:AM|PM)$/i.test(line)
+        );
+        title = nonTimeLines[0] || lines[0] || '';
+      }
       if (!title) return;
 
-      // Extract start–end times using the shared segment regex.
-      // Pattern examples:
-      //   "9:00 AM – 10:00 AM"   "9 AM – 10 AM"   "9:30 – 10:30 AM"
-      const timeMatch = ariaLabel.match(TIME_SEGMENT_RE);
+      // Extract start–end time range. Check aria-label first, then element text.
+      // Pattern examples: "9:00 AM – 9:50 AM"  "9 AM – 10 AM"  "9:30 – 10:30 AM"
+      let timeMatch = ariaLabel.match(TIME_SEGMENT_RE);
+      if (!timeMatch) {
+        timeMatch = (el.textContent || '').match(TIME_SEGMENT_RE);
+      }
       const durationMins = timeMatch
         ? getDurationMins(timeMatch[1], timeMatch[2])
         : null;

@@ -35,8 +35,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function handleVisionAnalysis(dataUrl, apiKey) {
   const prompt = [
-    'This is a screenshot of a Google Calendar page.',
-    'List every visible calendar event as a JSON array.',
+    'This is a screenshot of a SimplePractice calendar page.',
+    'List every visible calendar appointment as a JSON array.',
     'Each item should have: "title" (string), "startTime" (e.g. "9:00 AM" or null), "endTime" (e.g. "10:00 AM" or null).',
     'Return ONLY valid JSON – no extra text, no markdown fences.',
   ].join(' ');
